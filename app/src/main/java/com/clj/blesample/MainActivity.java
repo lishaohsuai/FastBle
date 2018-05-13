@@ -49,6 +49,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import android.net.wifi.WifiManager;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiInfo;
+import android.net.ConnectivityManager;
+
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -59,8 +64,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private LinearLayout layout_setting;
     private TextView txt_setting;
     private Button btn_scan;
-    private EditText et_name, et_mac, et_uuid;
-    private Switch sw_auto;
+//    private EditText et_name, et_mac, et_uuid;
+    private EditText wifi_ssid, wifi_psk;
+//    private Switch sw_auto;
+    private Switch sw_device;
     private ImageView img_loading;
 
     private Animation operatingAnim;
@@ -75,8 +82,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         BleManager.getInstance().init(getApplication());
         BleManager.getInstance()
-                .enableLog(true)
-                .setReConnectCount(1, 5000)
+                .enableLog(true) // 开启log
+                .setReConnectCount(1, 5000) //重新链接的次数，重新链接的间隔
+                .setSplitWriteNum(20)
                 .setOperateTimeout(5000);
     }
 
@@ -107,10 +115,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.txt_setting:
                 if (layout_setting.getVisibility() == View.VISIBLE) {
                     layout_setting.setVisibility(View.GONE);
-                    txt_setting.setText(getString(R.string.expand_search_settings));
+                    txt_setting.setText(getString(R.string.expand_wifi_settings));
                 } else {
+                    getWifiSSID();
                     layout_setting.setVisibility(View.VISIBLE);
-                    txt_setting.setText(getString(R.string.retrieve_search_settings));
+                    txt_setting.setText(getString(R.string.retrieve_wifi_settings));
                 }
                 break;
         }
@@ -124,11 +133,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_scan.setText(getString(R.string.start_scan));
         btn_scan.setOnClickListener(this);
 
-        et_name = (EditText) findViewById(R.id.et_name);
-        et_mac = (EditText) findViewById(R.id.et_mac);
-        et_uuid = (EditText) findViewById(R.id.et_uuid);
-        sw_auto = (Switch) findViewById(R.id.sw_auto);
-
+//        et_name = (EditText) findViewById(R.id.et_name);
+//        et_mac = (EditText) findViewById(R.id.et_mac);
+        wifi_ssid = (EditText) findViewById(R.id.wifi_ssid);
+        wifi_psk = (EditText) findViewById(R.id.wifi_psk);
+//        et_uuid = (EditText) findViewById(R.id.et_uuid);
+//        sw_auto = (Switch) findViewById(R.id.sw_auto);
+          sw_device = (Switch) findViewById(R.id.sw_device);
         layout_setting = (LinearLayout) findViewById(R.id.layout_setting);
         txt_setting = (TextView) findViewById(R.id.txt_setting);
         txt_setting.setOnClickListener(this);
@@ -167,7 +178,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
         ListView listView_device = (ListView) findViewById(R.id.list_device);
-        listView_device.setAdapter(mDeviceAdapter);
+        listView_device.setAdapter(mDeviceAdapter);// 传递子容器的显示
     }
 
     private void showConnectedDevice() {
@@ -180,13 +191,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setScanRule() {
-        String[] uuids;
-        String str_uuid = et_uuid.getText().toString();
-        if (TextUtils.isEmpty(str_uuid)) {
-            uuids = null;
-        } else {
-            uuids = str_uuid.split(",");
-        }
+        String[] uuids = null;
+//        String str_uuid = et_uuid.getText().toString();
+//        if (TextUtils.isEmpty(str_uuid)) {
+//            uuids = null;
+//        } else {
+//            uuids = str_uuid.split(",");
+//        }
         UUID[] serviceUuids = null;
         if (uuids != null && uuids.length > 0) {
             serviceUuids = new UUID[uuids.length];
@@ -201,26 +212,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
 
-        String[] names;
-        String str_name = et_name.getText().toString();
-        if (TextUtils.isEmpty(str_name)) {
-            names = null;
-        } else {
-            names = str_name.split(",");
+        String[] names = null;
+        boolean isDeviceFromNC = sw_device.isChecked();
+        if(isDeviceFromNC)
+        {
+            names = new String[]{"gxrobot"};
         }
+//        String str_name = et_name.getText().toString();
+//        if (TextUtils.isEmpty(str_name)) {
+//            names = null;
+//        } else {
+//            names = str_name.split(",");
+//        }
 
-        String mac = et_mac.getText().toString();
+//        String mac = et_mac.getText().toString();
 
-        boolean isAutoConnect = sw_auto.isChecked();
+//        boolean isAutoConnect = sw_auto.isChecked();
+        boolean isAutoConnect = false;
 
         BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder()
                 .setServiceUuids(serviceUuids)      // 只扫描指定的服务的设备，可选
                 .setDeviceName(true, names)   // 只扫描指定广播名的设备，可选
-                .setDeviceMac(mac)                  // 只扫描指定mac的设备，可选
+//                .setDeviceMac(mac)                  // 只扫描指定mac的设备，可选
                 .setAutoConnect(isAutoConnect)      // 连接时的autoConnect参数，可选，默认false
                 .setScanTimeOut(10000)              // 扫描超时时间，可选，默认10秒
                 .build();
         BleManager.getInstance().initScanRule(scanRuleConfig);
+    }
+
+    private void getWifiSSID() {
+        WifiManager wifiManager = ((WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE));
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+        Log.d("wifiInfo", wifiInfo.toString());
+        Log.d("SSID",wifiInfo.getSSID());
+        Log.d("RSSI", ""+wifiInfo.getRssi());
+        ConnectivityManager conMan = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        Log.d("WIFISTATE", ""+conMan.getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnected());
+        if (conMan.getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnected() == true)
+        {
+            wifi_ssid.setText(wifiInfo.getSSID().replaceAll("\"",""));
+            Log.d("WIFISTATE", "GOOOOOOD");
+        }
     }
 
     private void startScan() {
