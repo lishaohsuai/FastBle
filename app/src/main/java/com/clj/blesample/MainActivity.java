@@ -41,6 +41,7 @@ import com.clj.fastble.callback.BleGattCallback;
 import com.clj.fastble.callback.BleMtuChangedCallback;
 import com.clj.fastble.callback.BleRssiCallback;
 import com.clj.fastble.callback.BleScanCallback;
+import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
@@ -73,6 +74,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Animation operatingAnim;
     private DeviceAdapter mDeviceAdapter;
     private ProgressDialog progressDialog;
+    private boolean sendOk = true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,7 +127,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
     }
-
+    private void showExitDialog(String string){
+        new AlertDialog.Builder(this)
+                .setTitle(":)")
+                .setMessage(string)
+                .setPositiveButton("确定", null)
+                .show();
+    }
     private void initView() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -144,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         txt_setting = (TextView) findViewById(R.id.txt_setting);
         txt_setting.setOnClickListener(this);
         layout_setting.setVisibility(View.GONE);
-        txt_setting.setText(getString(R.string.expand_search_settings));
+        txt_setting.setText(getString(R.string.expand_wifi_settings));
 
         img_loading = (ImageView) findViewById(R.id.img_loading);
         operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
@@ -171,9 +180,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onDetail(BleDevice bleDevice) {
                 if (BleManager.getInstance().isConnected(bleDevice)) {
-                    Intent intent = new Intent(MainActivity.this, OperationActivity.class);
-                    intent.putExtra(OperationActivity.KEY_DATA, bleDevice);
-                    startActivity(intent);
+                    Log.e("SYSTEM", "177777777");
+                    if(wifi_ssid.getText() != null && wifi_psk.getText() != null)
+                    {
+                        String data = "{" + "\"S\":" + wifi_ssid.getText() + ",\"P\":" + wifi_psk.getText()
+                                + ",\"M\":" + bleDevice.getMac() + "}";
+
+                        byte[] bData=data.getBytes();
+
+                        String uuid_service = "0000fb02-0000-1000-8000-00805f9b34fb";
+                        String uuid_write = "00002c06-0000-1000-8000-00805f9b34fb";
+
+                        BleManager.getInstance().write(bleDevice, uuid_service,
+                                uuid_write, bData, new BleWriteCallback() {
+                                    @Override
+                                    public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                                        // 发送数据到设备成功
+                                        Log.d("SENDSUCCESS","---------success-------------");
+                                        sendOk = true;
+                                    }
+
+                                    @Override
+                                    public void onWriteFailure(BleException exception) {
+                                        // 发送数据到设备失败
+                                        Log.d("SENDFAILED","---------failed-------------");
+                                        sendOk = false;
+                                    }
+                                });
+                        if(sendOk == true)
+                        {
+                            showExitDialog("发送信息成功");
+                        }
+                        else
+                        {
+                            showExitDialog("发送信息失败");;
+                        }
+
+                    }
+
+//                    Intent intent = new Intent(MainActivity.this, OperationActivity.class);
+//                    intent.putExtra(OperationActivity.KEY_DATA, bleDevice);
+//                    startActivity(intent);
                 }
             }
         });
