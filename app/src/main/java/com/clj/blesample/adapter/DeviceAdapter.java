@@ -191,76 +191,76 @@ public class DeviceAdapter extends BaseAdapter {
         });
 
         holder.btn_detail.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                if (mListener != null) {
-//                    mListener.onDetail(bleDevice);
-//                }
-//            }
-
             @Override
-            public void onClick(View view)
-            {
-                if(mListener != null)
-                {
-                    View myConvertView = View.inflate(context, R.layout.activity_main, null);
-                    wifiSSID = (EditText) view.findViewById(R.id.wifi_ssid);
-                    Log.e("SYSTEM","temp  "+ (wifiSSID == null));
-                    Log.e("SYSTEM", "temp2 "+ wifiSSID.getText());
-                    wifiPsk = (EditText) view.findViewById(R.id.wifi_psk);
-
-                    if(wifiSSID.getText() != null && wifiPsk.getText() != null)
-                    {
-                        String data = "{" + "\"S\":" + wifiSSID.getText() + ",\"P\":" + wifiPsk.getText()
-                          + ",\"M\":" + holder.txt_mac.getText() + "}";
-                        new  AlertDialog.Builder(context)
-                                .setTitle("=.=")
-                                .setMessage(wifiSSID.getText())
-                                .setPositiveButton("确定", null )
-                                .show();
-                        byte[] bData=data.getBytes();
-
-                        String uuid_service = "0000fb02-0000-1000-8000-00805f9b34fb";
-                        String uuid_write = "00002c06-0000-1000-8000-00805f9b34fb";
-                        Log.e("SYSTEM","--------------------09-0-0-00-0- ");
-
-                        BleManager.getInstance().write(bleDevice, uuid_service,
-                                uuid_write, bData, new BleWriteCallback() {
-                                    @Override
-                                    public void onWriteSuccess(int current, int total, byte[] justWrite) {
-                                        // 发送数据到设备成功
-                                        Log.d("SENDSUCCESS","---------success-------------");
-                                        sendOk = true;
-                                    }
-
-                                    @Override
-                                    public void onWriteFailure(BleException exception) {
-                                        // 发送数据到设备失败
-                                        Log.d("SENDFAILED","---------failed-------------");
-                                        sendOk = false;
-                                    }
-                                });
-                        if(sendOk == true)
-                        {
-                            new  AlertDialog.Builder(context)
-                                    .setTitle("=.=")
-                                    .setMessage("发送信息成功")
-                                    .setPositiveButton("确定", null )
-                                    .show();
-                        }
-                        else
-                        {
-                            new  AlertDialog.Builder(context)
-                                    .setTitle("=.=")
-                                    .setMessage("发送信息失败")
-                                    .setPositiveButton("确定", null )
-                                    .show();
-                        }
-
-                    }
-
+            public void onClick(View view) {
+                if (mListener != null) {
+                    Log.e("SYSTEM", "holder.btn_detail.setOnClickListener");
+                    mListener.onDetail(bleDevice);
                 }
             }
+
+//            @Override
+//            public void onClick(View view)
+//            {
+//                if(mListener != null)
+//                {
+//                    View myConvertView = View.inflate(context, R.layout.activity_main, null);
+//                    wifiSSID = (EditText) myConvertView.findViewById(R.id.wifi_ssid);
+//                    Log.e("SYSTEM","temp  "+ (wifiSSID == null));
+//                    Log.e("SYSTEM", "temp2 "+ wifiSSID.getText());
+//                    wifiPsk = (EditText) myConvertView.findViewById(R.id.wifi_psk);
+//
+//                    if(wifiSSID.getText() != null && wifiPsk.getText() != null)
+//                    {
+//                        String data = "{" + "\"S\":" + wifiSSID.getText() + ",\"P\":" + wifiPsk.getText()
+//                          + ",\"M\":" + holder.txt_mac.getText() + "}";
+//                        new  AlertDialog.Builder(context)
+//                                .setTitle("=.=")
+//                                .setMessage(wifiSSID.getText())
+//                                .setPositiveButton("确定", null )
+//                                .show();
+//                        byte[] bData=data.getBytes();
+//
+//                        String uuid_service = "0000fb02-0000-1000-8000-00805f9b34fb";
+//                        String uuid_write = "00002c06-0000-1000-8000-00805f9b34fb";
+//
+//                        BleManager.getInstance().write(bleDevice, uuid_service,
+//                                uuid_write, bData, new BleWriteCallback() {
+//                                    @Override
+//                                    public void onWriteSuccess(int current, int total, byte[] justWrite) {
+//                                        // 发送数据到设备成功
+//                                        Log.d("SENDSUCCESS","---------success-------------");
+//                                        sendOk = true;
+//                                    }
+//
+//                                    @Override
+//                                    public void onWriteFailure(BleException exception) {
+//                                        // 发送数据到设备失败
+//                                        Log.d("SENDFAILED","---------failed-------------");
+//                                        sendOk = false;
+//                                    }
+//                                });
+//                        if(sendOk == true)
+//                        {
+//                            new  AlertDialog.Builder(context)
+//                                    .setTitle("=.=")
+//                                    .setMessage("发送信息成功")
+//                                    .setPositiveButton("确定", null )
+//                                    .show();
+//                        }
+//                        else
+//                        {
+//                            new  AlertDialog.Builder(context)
+//                                    .setTitle("=.=")
+//                                    .setMessage("发送信息失败")
+//                                    .setPositiveButton("确定", null )
+//                                    .show();
+//                        }
+//
+//                    }
+//
+//                }
+//            }
 
         });
 
@@ -286,6 +286,8 @@ public class DeviceAdapter extends BaseAdapter {
 
         void onDetail(BleDevice bleDevice);
     }
+
+
 
     private OnDeviceClickListener mListener;
 

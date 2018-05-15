@@ -18,7 +18,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
@@ -35,16 +34,18 @@ import android.widget.Toast;
 
 import com.clj.blesample.adapter.DeviceAdapter;
 import com.clj.blesample.comm.ObserverManager;
-import com.clj.blesample.operation.OperationActivity;
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
 import com.clj.fastble.callback.BleMtuChangedCallback;
 import com.clj.fastble.callback.BleRssiCallback;
 import com.clj.fastble.callback.BleScanCallback;
+import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
 
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -53,6 +54,8 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.ConnectivityManager;
+import java.util.Enumeration;
+
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -73,6 +76,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Animation operatingAnim;
     private DeviceAdapter mDeviceAdapter;
     private ProgressDialog progressDialog;
+    private boolean sendOk = true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,7 +129,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
     }
-
+    private void showExitDialog(String string){
+        new AlertDialog.Builder(this)
+                .setTitle(":)")
+                .setMessage(string)
+                .setPositiveButton("确定", null)
+                .show();
+    }
     private void initView() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -144,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         txt_setting = (TextView) findViewById(R.id.txt_setting);
         txt_setting.setOnClickListener(this);
         layout_setting.setVisibility(View.GONE);
-        txt_setting.setText(getString(R.string.expand_search_settings));
+        txt_setting.setText(getString(R.string.expand_wifi_settings));
 
         img_loading = (ImageView) findViewById(R.id.img_loading);
         operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
@@ -171,15 +182,69 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onDetail(BleDevice bleDevice) {
                 if (BleManager.getInstance().isConnected(bleDevice)) {
-                    Intent intent = new Intent(MainActivity.this, OperationActivity.class);
-                    intent.putExtra(OperationActivity.KEY_DATA, bleDevice);
-                    startActivity(intent);
+                    Log.e("SYSTEM", "177777777");
+                    if(wifi_ssid.getText() != null && wifi_psk.getText() != null)
+                    {
+                        String data = "{" + "\"S\":\"" + wifi_ssid.getText() + "\",\"P\":\"" + wifi_psk.getText()
+                                + "\",\"M\":\"" + getMacString() + "\"}";
+                        byte[] bData=data.getBytes();
+
+                        String uuid_service = "0000fb02-0000-1000-8000-00805f9b34fb";
+                        String uuid_write = "00002c06-0000-1000-8000-00805f9b34fb";
+
+                        BleManager.getInstance().write(bleDevice, uuid_service,
+                                uuid_write, bData, new BleWriteCallback() {
+                                    @Override
+                                    public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                                        // 发送数据到设备成功
+                                        Log.d("SENDSUCCESS","---------success-------------");
+                                        sendOk = true;
+                                    }
+
+                                    @Override
+                                    public void onWriteFailure(BleException exception) {
+                                        // 发送数据到设备失败
+                                        Log.d("SENDFAILED","---------failed-------------");
+                                        sendOk = false;
+                                    }
+                                });
+                        if(sendOk == true)
+                        {
+                            showExitDialog("发送信息成功");
+                        }
+                        else
+                        {
+                            showExitDialog("发送信息失败");;
+                        }
+
+                    }
+
+//                    Intent intent = new Intent(MainActivity.this, OperationActivity.class);
+//                    intent.putExtra(OperationActivity.KEY_DATA, bleDevice);
+//                    startActivity(intent);
                 }
             }
         });
         ListView listView_device = (ListView) findViewById(R.id.list_device);
         listView_device.setAdapter(mDeviceAdapter);// 传递子容器的显示
     }
+
+
+    public String getMacString() {
+        WifiManager mWifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (mWifi.isWifiEnabled()) {
+            WifiInfo wifiInfo = mWifi.getConnectionInfo();
+            String netName = wifiInfo.getSSID(); //获取被连接网络的名称
+            String netMac = wifiInfo.getBSSID(); //获取被连接网络的mac地址
+            String localMac = wifiInfo.getMacAddress();// 获得本机的MAC地址
+            Log.d("MainActivity", "---netName:" + netName);   //---netName:HUAWEI MediaPad
+            Log.d("MainActivity", "---netMac:" + netMac);     //---netMac:78:f5:fd:ae:b9:97
+            Log.d("MainActivity", "---localMac:" + localMac); //---localMac:BC:76:70:9F:56:BD
+            return netMac;
+        }
+        return "00:00:00:00:00:00";
+    }
+
 
     private void showConnectedDevice() {
         List<BleDevice> deviceList = BleManager.getInstance().getAllConnectedDevice();
